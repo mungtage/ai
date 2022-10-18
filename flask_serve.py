@@ -82,16 +82,16 @@ def predeict_image():
         test_img_features = model_resnet.predict(preprocessed_img, batch_size=1)
         image_test = pca.transform(test_img_features)
         distance, indices = neighbors.kneighbors(image_test)
-
+        outputs = {}
 
         def similar_images(indices):
             number = 1    
             for index in indices:
                 if number <=len(indices) :
-                    print(filenames[index].split("/")[6])    
+                    outputs[number-1]=filenames[index].split("/")[5]
                     number +=1
 
-        outputs = {"filename":similar_images(indices[0])}
+        similar_images(indices[0])
     return jsonify(outputs)
 
 if __name__ == "__main__":
