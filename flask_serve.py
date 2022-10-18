@@ -34,7 +34,7 @@ PORT = os.getenv("PORT")
 def predeict_image():
     img_url = request.args.get("img")
     if img_url != None:
-        path = '/content/drive/MyDrive/test/te'
+        path = '/home/mungtagepipe/pipeline/images/announcement'
         file_list = os.listdir(path)
 
         data_number = len(file_list)
@@ -46,7 +46,7 @@ def predeict_image():
             k_number = len(file_list)
             components = 18
 
-        image_path = "/content/drive/MyDrive/test"
+        image_path = "/home/mungtagepipe/pipeline/images"
         img_size = 256 #input size
         model_resnet = ResNet50(weights='imagenet', include_top=False,input_shape=(img_size, img_size, 3),pooling='max')
 
