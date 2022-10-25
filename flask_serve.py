@@ -1,12 +1,13 @@
-from crypt import methods
+# from crypt import methods
 from flask import Flask, jsonify, request
 import os
+import requests
 import numpy as np
 from numpy.linalg import norm
+import boto3
 import PIL
 import time
 import math
-import dotenv
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -19,18 +20,13 @@ from flask_cors import CORS
 import urllib.request
 
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 app = Flask(__name__)
 CORS(app)
 
-dotenv.load_dotenv()
-
-# Port num
-PORT = os.getenv("PORT")
-
-
-@app.route('/pd', methods=["GET"])
+@app.route('/pd/', methods=["GET"])
 def predeict_image():
     img_url = request.args.get("img")
     if img_url != None:
@@ -38,20 +34,22 @@ def predeict_image():
         file_list = os.listdir(path)
 
         data_number = len(file_list)
-
         if data_number == 0:
             k_number = 0
+            components = 0
             exit()
+        elif data_number <= 4:
+            k_number = data_number
+            components = data_number
+        elif data_number <= 17:
+            k_number = 5
+            components = data_number
         else:
-            k_number = len(file_list)
+            k_number = data_number
             components = 18
 
         image_path = "/home/mungtagepipe/pipeline/images"
-        img_size = 256 #input size
-        model_resnet = ResNet50(weights='imagenet', include_top=False,input_shape=(img_size, img_size, 3),pooling='max')
-
-
-        batch_size = 64
+        batch_size = 16
         img_generator = ImageDataGenerator(preprocessing_function = preprocess_input)
         data_generator = img_generator.flow_from_directory(image_path, target_size = (img_size,img_size), batch_size = batch_size, class_mode = None, shuffle=False)
 
@@ -69,11 +67,12 @@ def predeict_image():
         neighbors.fit(compressed_features)
 
         search_image_url = img_url.split("?")[0]
-        urllib.request.urlretrieve(
-        search_image_url,
-        "d.jpg")
+        responds = requests.get(search_image_url)
+        search_image_name = search_image_url.split("/")[3]
+        print(search_image_name)
+        open(f"{search_image_name}", "wb").write(responds.content)
 
-        search_file = "d.jpg"
+        search_file = search_image_name
         input_shape = (img_size, img_size, 3)
         img = image.load_img(search_file, target_size=(input_shape[0], input_shape[1]))
         img_array = image.img_to_array(img)
@@ -85,10 +84,10 @@ def predeict_image():
         outputs = {}
 
         def similar_images(indices):
-            number = 1    
+            number = 1
             for index in indices:
-                if number <=len(indices) :
-                    outputs[number-1]=filenames[index].split("/")[5]
+                if number <=len(indices):
+                    outputs[number-1]=os.path.splitext(os.path.basename(filenames[index]))[0]+".jpg"
                     number +=1
 
         similar_images(indices[0])
@@ -97,4 +96,4 @@ def predeict_image():
 if __name__ == "__main__":
   img_size = 256 #input size
   model_resnet = ResNet50(weights='imagenet', include_top=False,input_shape=(img_size, img_size, 3),pooling='max')
-  app.run(host="0.0.0.0", port=PORT, debug=True)
+  app.run(host="0.0.0.0", port=5000, debug=True)
